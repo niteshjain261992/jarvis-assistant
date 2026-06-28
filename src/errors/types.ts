@@ -1,0 +1,5 @@
+export enum JarvisErrorType {
+  CLIENT_TIMEOUT = 'CLIENT_TIMEOUT',
+  CLIENT_ERROR = 'CLIENT_ERROR',
+  SERVER_ERROR = 'SERVER_ERROR',
+}
