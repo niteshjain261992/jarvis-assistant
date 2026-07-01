@@ -3,6 +3,7 @@ export {
   assertUniqueToolMetadata,
   buildToolsForConnection,
   getToolByCommandName,
+  getToolFreshnessRules,
   getToolMetadataByToolName,
 } from './registry.js';
 export { withToolPersistence } from './tool-persistence.js';
@@ -11,6 +12,7 @@ export type {
   ClientToolFactory,
   ServerToolFactory,
   ToolDefinition,
+  ToolFreshness,
   ToolHandlerResult,
   ToolMetadata,
 } from './types.js';

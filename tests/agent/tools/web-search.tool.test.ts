@@ -186,4 +186,9 @@ describe('buildWebSearchTool', () => {
     expect(insertMessageMock).not.toHaveBeenCalled();
     expect(searchMock).toHaveBeenCalled();
   });
+
+  it('declares refetch-required freshness', () => {
+    expect(webSearchMetadata.freshness.refetchRequired).toBe(true);
+    expect(webSearchMetadata.freshness.reason.length).toBeGreaterThan(0);
+  });
 });

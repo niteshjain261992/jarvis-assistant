@@ -1,10 +1,25 @@
-# agent-runner Specification
+## ADDED Requirements
 
-## Purpose
+### Requirement: Generated tool freshness rules in system prompt
 
-Define the LangGraph-based agent runner (`runAgent`) that unifies conversational replies and tool execution behind a single entry point, returning structured `text` or `clarify` results for downstream message pipeline integration. Tool execution and action-row persistence happen inside tool handlers via `withToolPersistence` and `requestFromClient`.
+`buildAgentSystemPrompt` in `src/agent/agent-runner.ts` SHALL generate a "tool freshness rules" section by calling `getToolFreshnessRules()` from the tool registry and iterating its result — it SHALL NOT hardcode a list of tool names or reasons. For each entry with `refetchRequired: true`, the section SHALL include a line naming the tool, its `reason`, and an instruction to call that tool again on a repeat request instead of reusing a previous answer from the conversation history. Entries with `refetchRequired: false` SHALL be omitted from the section. If no registered tool has `refetchRequired: true`, the entire section SHALL be omitted from the system prompt. When present, the section SHALL be inserted immediately after `TOOL_USE_POLICY` and before the current date/time line.
 
-## Requirements
+#### Scenario: Freshness section lists refetch-required tools
+
+- **WHEN** `buildAgentSystemPrompt(userContext)` is called and the registry has tools with `refetchRequired: true` (e.g. `web_search`, `open_camera`, `off_lights`, `play_music`)
+- **THEN** the returned prompt contains a section naming each of those tools and instructing the model to call the tool again on repeat requests rather than reuse a prior answer
+
+#### Scenario: Freshness section omitted when no tool requires refetch
+
+- **WHEN** `buildAgentSystemPrompt(userContext)` is called and `getToolFreshnessRules()` returns no entry with `refetchRequired: true`
+- **THEN** the returned prompt does not contain a freshness-rules section
+
+#### Scenario: Freshness section is generated from the registry, not hardcoded
+
+- **WHEN** a new tool with `refetchRequired: true` is registered in `TOOL_METADATA`
+- **THEN** `buildAgentSystemPrompt` output includes a line for that tool without any change to `agent-runner.ts`
+
+## MODIFIED Requirements
 
 ### Requirement: LangGraph agent runner service
 
@@ -85,22 +100,3 @@ The system SHALL include `tests/agent/agent-runner.test.ts` mocking LangChain/Ol
 
 - **WHEN** `buildAgentSystemPrompt(userContext, summary)` is called with a non-empty `userContext` and `summary`
 - **THEN** the output still includes the Jarvis persona, the current IST date/time line, the user context section, and the summary section
-
-### Requirement: Generated tool freshness rules in system prompt
-
-`buildAgentSystemPrompt` in `src/agent/agent-runner.ts` SHALL generate a "tool freshness rules" section by calling `getToolFreshnessRules()` from the tool registry and iterating its result — it SHALL NOT hardcode a list of tool names or reasons. For each entry with `refetchRequired: true`, the section SHALL include a line naming the tool, its `reason`, and an instruction to call that tool again on a repeat request instead of reusing a previous answer from the conversation history. Entries with `refetchRequired: false` SHALL be omitted from the section. If no registered tool has `refetchRequired: true`, the entire section SHALL be omitted from the system prompt. When present, the section SHALL be inserted immediately after `TOOL_USE_POLICY` and before the current date/time line.
-
-#### Scenario: Freshness section lists refetch-required tools
-
-- **WHEN** `buildAgentSystemPrompt(userContext)` is called and the registry has tools with `refetchRequired: true` (e.g. `web_search`, `open_camera`, `off_lights`, `play_music`)
-- **THEN** the returned prompt contains a section naming each of those tools and instructing the model to call the tool again on repeat requests rather than reuse a prior answer
-
-#### Scenario: Freshness section omitted when no tool requires refetch
-
-- **WHEN** `buildAgentSystemPrompt(userContext)` is called and `getToolFreshnessRules()` returns no entry with `refetchRequired: true`
-- **THEN** the returned prompt does not contain a freshness-rules section
-
-#### Scenario: Freshness section is generated from the registry, not hardcoded
-
-- **WHEN** a new tool with `refetchRequired: true` is registered in `TOOL_METADATA`
-- **THEN** `buildAgentSystemPrompt` output includes a line for that tool without any change to `agent-runner.ts`

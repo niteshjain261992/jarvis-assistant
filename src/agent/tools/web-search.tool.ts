@@ -21,6 +21,10 @@ export const webSearchMetadata = {
   ],
   executor: 'server',
   payload: {},
+  freshness: {
+    refetchRequired: true,
+    reason: 'returns real-time information that changes over time',
+  },
 } as const;
 
 function formatTavilyResponse(response: TavilySearchResponse): string {

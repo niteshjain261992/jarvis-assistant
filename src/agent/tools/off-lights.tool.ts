@@ -13,6 +13,10 @@ export const offLightsMetadata = {
   executor: 'client',
   payload: { target: 'lights', state: 'off' },
   clientTimeoutMs: 5_000,
+  freshness: {
+    refetchRequired: true,
+    reason: 'is an action that must run each time it is requested',
+  },
 } as const;
 
 export function buildOffLightsTool(

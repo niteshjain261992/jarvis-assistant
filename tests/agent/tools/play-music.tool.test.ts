@@ -253,4 +253,9 @@ describe('buildPlayMusicTool', () => {
     expect(tool.tool.description).toContain('query');
     expect(tool.tool.description).toContain('youtube');
   });
+
+  it('declares refetch-required freshness', () => {
+    expect(playMusicMetadata.freshness.refetchRequired).toBe(true);
+    expect(playMusicMetadata.freshness.reason.length).toBeGreaterThan(0);
+  });
 });

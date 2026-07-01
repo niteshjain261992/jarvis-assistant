@@ -55,8 +55,49 @@ describe('buildAgentSystemPrompt', () => {
     const prompt = await buildAgentSystemPrompt('');
 
     expect(prompt).toContain(CONVERSATION_SYSTEM_PROMPT);
-    expect(prompt).toContain('Most user requests are conversational');
+    expect(prompt).toContain('Conversational requests that need no external data or device action');
     expect(prompt).toContain('prefer answering with text');
+  });
+
+  it('does not contain an unconditional do-not-call-a-tool directive', async () => {
+    const prompt = await buildAgentSystemPrompt('');
+
+    expect(prompt).not.toMatch(/do not call any tool/i);
+  });
+
+  it('includes a generated freshness-rules section naming web_search', async () => {
+    const prompt = await buildAgentSystemPrompt('');
+
+    expect(prompt).toContain(
+      'Some tools return information or perform actions that must not be reused from earlier in the conversation:',
+    );
+    expect(prompt).toContain('web_search');
+    expect(prompt).toContain('do not reuse a previous answer from the conversation history');
+  });
+
+  it('generates the freshness section from the tool registry, not a hardcoded list', async () => {
+    const rulesSpy = jest.spyOn(agentTools, 'getToolFreshnessRules').mockReturnValue([
+      { toolName: 'fake_scratch_tool', refetchRequired: true, reason: 'is a made-up test tool' },
+    ]);
+
+    const prompt = await buildAgentSystemPrompt('');
+
+    expect(prompt).toContain('fake_scratch_tool');
+    expect(prompt).toContain('is a made-up test tool');
+    rulesSpy.mockRestore();
+  });
+
+  it('omits the freshness section when no tool requires refetching', async () => {
+    const rulesSpy = jest.spyOn(agentTools, 'getToolFreshnessRules').mockReturnValue([
+      { toolName: 'durable_tool', refetchRequired: false, reason: 'never changes' },
+    ]);
+
+    const prompt = await buildAgentSystemPrompt('');
+
+    expect(prompt).not.toContain(
+      'Some tools return information or perform actions that must not be reused',
+    );
+    rulesSpy.mockRestore();
   });
 
   it('includes summary when provided', async () => {

@@ -28,21 +28,25 @@ const TOOL_METADATA: ToolMetadata[] = [
     commandName: openCameraMetadata.commandName,
     executor: openCameraMetadata.executor,
     toolName: 'open_camera',
+    freshness: openCameraMetadata.freshness,
   },
   {
     commandName: offLightsMetadata.commandName,
     executor: offLightsMetadata.executor,
     toolName: 'off_lights',
+    freshness: offLightsMetadata.freshness,
   },
   {
     commandName: playMusicMetadata.commandName,
     executor: playMusicMetadata.executor,
     toolName: 'play_music',
+    freshness: playMusicMetadata.freshness,
   },
   {
     commandName: webSearchMetadata.commandName,
     executor: webSearchMetadata.executor,
     toolName: 'web_search',
+    freshness: webSearchMetadata.freshness,
   },
 ];
 
@@ -107,4 +111,16 @@ export function getToolByCommandName(commandName: string): ToolMetadata | undefi
 
 export function getToolMetadataByToolName(toolName: string): ToolMetadata | undefined {
   return TOOL_METADATA.find((entry) => entry.toolName === toolName);
+}
+
+export function getToolFreshnessRules(): Array<{
+  toolName: string;
+  refetchRequired: boolean;
+  reason: string;
+}> {
+  return TOOL_METADATA.map((entry) => ({
+    toolName: entry.toolName,
+    refetchRequired: entry.freshness.refetchRequired,
+    reason: entry.freshness.reason,
+  }));
 }

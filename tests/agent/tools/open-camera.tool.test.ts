@@ -92,4 +92,9 @@ describe('buildOpenCameraTool', () => {
       expect(tool.tool.description).toContain(phrase);
     }
   });
+
+  it('declares refetch-required freshness', () => {
+    expect(openCameraMetadata.freshness.refetchRequired).toBe(true);
+    expect(openCameraMetadata.freshness.reason.length).toBeGreaterThan(0);
+  });
 });

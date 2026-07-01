@@ -92,4 +92,9 @@ describe('buildOffLightsTool', () => {
       expect(tool.tool.description).toContain(phrase);
     }
   });
+
+  it('declares refetch-required freshness', () => {
+    expect(offLightsMetadata.freshness.refetchRequired).toBe(true);
+    expect(offLightsMetadata.freshness.reason.length).toBeGreaterThan(0);
+  });
 });

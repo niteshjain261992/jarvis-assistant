@@ -20,6 +20,10 @@ export const playMusicMetadata = {
   executor: 'client',
   payload: {},
   clientTimeoutMs: 10_000,
+  freshness: {
+    refetchRequired: true,
+    reason: 'is an action that must run each time it is requested',
+  },
 } as const;
 
 export function buildPlayMusicTool(

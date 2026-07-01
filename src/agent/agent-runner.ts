@@ -3,7 +3,7 @@ import { ChatOllama } from '@langchain/ollama';
 import { createAgent } from 'langchain';
 import type { WebSocket } from 'ws';
 
-import { buildToolsForConnection } from '@/agent/tools/index.js';
+import { buildToolsForConnection, getToolFreshnessRules } from '@/agent/tools/index.js';
 import type { ClientTaskPersistenceContext } from '@/agent/tools/index.js';
 import { env } from '@/config/env.js';
 import type { MessageDocument } from '@/models/message.model.js';
@@ -23,18 +23,39 @@ export const CONVERSATION_SYSTEM_PROMPT = [
 ].join(' ');
 
 const TOOL_USE_POLICY = [
-  'Most user requests are conversational — reply with a direct text answer and do not call any tool.',
-  'Only call a tool when the request clearly matches one of the available tool descriptions.',
-  'When you are unsure, prefer answering with text rather than guessing a tool.',
+  'Conversational requests that need no external data or device action should be answered directly with text, without calling a tool.',
+  'When a request needs real-time information or a device action, call the matching tool — including when the same request is repeated, rather than reusing an earlier answer from the conversation.',
+  'When you are unsure whether a tool applies, prefer answering with text rather than guessing a tool.',
 ].join(' ');
+
+function buildToolFreshnessSection(): string | undefined {
+  const refetchRules = getToolFreshnessRules().filter((rule) => rule.refetchRequired);
+
+  if (refetchRules.length === 0) {
+    return undefined;
+  }
+
+  const lines = refetchRules.map(
+    (rule) =>
+      `- ${rule.toolName}: ${rule.reason}. If the user asks again, call ${rule.toolName} again — do not reuse a previous answer from the conversation history.`,
+  );
+
+  return [
+    'Some tools return information or perform actions that must not be reused from earlier in the conversation:',
+    ...lines,
+  ].join('\n');
+}
 
 export async function buildAgentSystemPrompt(userContext: string, summary?: string): Promise<string> {
   const now = new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' });
-  const parts = [
-    CONVERSATION_SYSTEM_PROMPT,
-    TOOL_USE_POLICY,
-    `Current date and time: ${now} (IST, Asia/Kolkata)`,
-  ];
+  const parts = [CONVERSATION_SYSTEM_PROMPT, TOOL_USE_POLICY];
+
+  const freshnessSection = buildToolFreshnessSection();
+  if (freshnessSection) {
+    parts.push(freshnessSection);
+  }
+
+  parts.push(`Current date and time: ${now} (IST, Asia/Kolkata)`);
 
   if (userContext) {
     parts.push(`Known information about the user:\n${userContext}`);

@@ -5,6 +5,7 @@ import {
   assertUniqueToolMetadata,
   buildToolsForConnection,
   getToolByCommandName,
+  getToolFreshnessRules,
 } from '@/agent/tools/index.js';
 import { buildOffLightsTool } from '@/agent/tools/off-lights.tool.js';
 import { buildOpenCameraTool } from '@/agent/tools/open-camera.tool.js';
@@ -43,21 +44,25 @@ describe('agent tools registry', () => {
       commandName: 'OPEN:CAMERA',
       executor: 'client',
       toolName: 'open_camera',
+      freshness: { refetchRequired: true, reason: expect.any(String) },
     });
     expect(getToolByCommandName('OFF:LIGHTS')).toEqual({
       commandName: 'OFF:LIGHTS',
       executor: 'client',
       toolName: 'off_lights',
+      freshness: { refetchRequired: true, reason: expect.any(String) },
     });
     expect(getToolByCommandName('PLAY:MUSIC')).toEqual({
       commandName: 'PLAY:MUSIC',
       executor: 'client',
       toolName: 'play_music',
+      freshness: { refetchRequired: true, reason: expect.any(String) },
     });
     expect(getToolByCommandName('WEB:SEARCH')).toEqual({
       commandName: 'WEB:SEARCH',
       executor: 'server',
       toolName: 'web_search',
+      freshness: { refetchRequired: true, reason: expect.any(String) },
     });
   });
 
@@ -92,21 +97,45 @@ describe('agent tools registry', () => {
   });
 
   it('assertUniqueToolMetadata throws on duplicate LangChain tool name', () => {
+    const freshness = { refetchRequired: true, reason: 'test' };
     expect(() =>
       assertUniqueToolMetadata([
-        { commandName: 'OPEN:CAMERA', executor: 'client', toolName: 'open_camera' },
-        { commandName: 'OFF:LIGHTS', executor: 'client', toolName: 'open_camera' },
+        { commandName: 'OPEN:CAMERA', executor: 'client', toolName: 'open_camera', freshness },
+        { commandName: 'OFF:LIGHTS', executor: 'client', toolName: 'open_camera', freshness },
       ]),
     ).toThrow(/Duplicate LangChain tool name: open_camera/);
   });
 
   it('assertUniqueToolMetadata throws on duplicate command name', () => {
+    const freshness = { refetchRequired: true, reason: 'test' };
     expect(() =>
       assertUniqueToolMetadata([
-        { commandName: 'OPEN:CAMERA', executor: 'client', toolName: 'open_camera' },
-        { commandName: 'OPEN:CAMERA', executor: 'client', toolName: 'off_lights' },
+        { commandName: 'OPEN:CAMERA', executor: 'client', toolName: 'open_camera', freshness },
+        { commandName: 'OPEN:CAMERA', executor: 'client', toolName: 'off_lights', freshness },
       ]),
     ).toThrow(/Duplicate command name: OPEN:CAMERA/);
+  });
+
+  it('getToolFreshnessRules returns an entry for every registered tool', () => {
+    const rules = getToolFreshnessRules();
+    expect(rules.map((rule) => rule.toolName).sort()).toEqual([
+      'off_lights',
+      'open_camera',
+      'play_music',
+      'web_search',
+    ]);
+    for (const rule of rules) {
+      expect(typeof rule.refetchRequired).toBe('boolean');
+      expect(rule.reason.length).toBeGreaterThan(0);
+    }
+  });
+
+  it('getToolFreshnessRules marks web_search and every device tool as refetch-required', () => {
+    const rules = getToolFreshnessRules();
+    for (const toolName of ['web_search', 'open_camera', 'off_lights', 'play_music']) {
+      const rule = rules.find((entry) => entry.toolName === toolName);
+      expect(rule?.refetchRequired).toBe(true);
+    }
   });
 });
 

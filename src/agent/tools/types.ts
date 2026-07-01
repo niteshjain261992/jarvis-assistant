@@ -19,10 +19,16 @@ export interface ToolDefinition {
   executor: CommandExecutor;
 }
 
+export interface ToolFreshness {
+  refetchRequired: boolean;
+  reason: string;
+}
+
 export interface ToolMetadata {
   commandName: string;
   executor: CommandExecutor;
   toolName: string;
+  freshness: ToolFreshness;
 }
 
 export type ClientToolFactory = (
